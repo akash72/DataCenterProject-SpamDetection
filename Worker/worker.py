@@ -15,23 +15,23 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 
 
-def read(file_path, emails, labels, is_spam):
+def read(file_path, em, la, is_spam):
     for files in glob.glob(os.path.join(file_path, "*txt")):
         with open(files, "r", encoding='ISO-8859-1') as fp:
-            emails.append(fp.read())
-            labels.append(is_spam)
+            em.append(fp.read())
+            la.append(is_spam)
 
-    return emails, labels
+    return em, la
 
 
 def read_mails(file_path):
-    emails = []
-    labels = []
+    em = []
+    la = []
 
-    emails, labels = read(file_path[0], emails, labels, 0)
-    emails, labels = read(file_path[1], emails, labels, 1)
-    emails = clean_text(emails)
-    return emails, labels
+    em, la = read(file_path[0], em, la, 0)
+    em, la = read(file_path[1], em, la, 1)
+    em = clean_text(em)
+    return em, la
 
 
 def letter_only(string):
@@ -40,37 +40,37 @@ def letter_only(string):
 
 def clean_text(docs):
     all_names = set(names.words())
-    cleaned_doc = []
+    cl_doc = []
     lemm = WordNetLemmatizer()
     for doc in docs:
-        cleaned_doc.append(" ".join([lemm.lemmatize(word.lower()) for word in doc.split() if letter_only(word) and word not in all_names]))
+        cl_doc.append(" ".join([lemm.lemmatize(word.lower()) for word in doc.split() if letter_only(word) and word not in all_names]))
 
-    return cleaned_doc
+    return cl_doc
 
 
-def get_label_index(labels):
+def get_label_index(la):
     ''' Label the index
         label is of the list
         return dict object 
     '''
     from collections import defaultdict
-    label_index = defaultdict(list)
-    for index,label in enumerate(labels):
-        label_index[label].append(index)
+    lab_ind = defaultdict(list)
+    for ind,lab in enumerate(la):
+        lab_ind[lab].append(ind)
 
-    return label_index
+    return lab_ind
 
 
-def get_prior(label_index):
+def get_prior(lab_ind):
     '''Compute the prior knowlege based on trainning set
         i.e compute the probabitlity of legit and spame emil(0,1)
         format of label_index
         [{0:index}]
     '''
-    prior = {label:len(index) for label,index in label_index.items()}
+    prior = {lab:len(ind) for lab,ind in lab_ind.items()}
     total_count = sum(prior.values())
-    for label in prior:
-        prior[label] = float(prior[label]/total_count)
+    for lab in prior:
+        prior[lab] = float(prior[lab]/total_count)
 
     return prior
 
@@ -166,29 +166,26 @@ def callback(ch, method, properties, body):
     results = get_posterior(email_test,prior,likelihood)
     print(results)
     Yt = [0,1]
-    k = ''
-    r = request
+    k = None
     for result, actual in zip(results, Yt):
-        if actual == 1:
-            if result[0] > 0.3 and result[1] < 0.7:
-                correct += 1
-                k = "Spam"
-            elif result[1] > 0.7 and result[0] < 0.3:
+        if actual == 1 or actual == 0:
+            if result[0] > 0.8 and result[1] < 0.3:
                 correct += 1
                 k = "Ham"
-    if(k):
-        print(k)
-    else:
-        k = "SPAM"
-        print(k)
-    print("ACCURACY:{0:.1f}".format(correct/len(Ytest) *100))
+            elif result[1] > 0.5 and result[0] < 0.7:
+                correct += 1
+                k = "Spam"
+    #if(k):
+     #   print(k)
+    #else:
+     #   k = "SPAM"
+      #  print(k)
+    print("ACCURACY:{0:.1f}".format(correct/len(Yt) *100))
 
     response = {
             "res": k
         }
     print(response)
-    message = k
-    print(message)
 
     redisHash = redis.Redis(host="10.128.15.215 ", db=1)     # Keyword - Hash(content) pair
     redisHash.set(first_Word, hashval)
@@ -198,19 +195,12 @@ def callback(ch, method, properties, body):
 
     listval = []
     listval.append(text)
-    listval.append(message)
+    listval.append(k)
     redisName = redis.Redis(host="10.128.15.215 ", db=2)        # Store Hash - [Content,result] Pair
     redisName.set(hashval, pickle.dumps(listval))
     print("\n Redis get by Hash: ", hashval)
     val2 = pickle.loads(redisName.get(hashval))
     print(val2)
-
-    credentials2 = pika.PlainCredentials('guest', 'guest')
-    parameters2 = pika.ConnectionParameters('10.128.15.216', 5672, '/', credentials2)
-    connection2 = pika.BlockingConnection(parameters2)
-    channel2 = connection2.channel()
-    channel2.queue_declare(queue='proj')
-    channel2.basic_publish(exchange='', routing_key='proj', body=message)
     print("Sent worker data")
 
 

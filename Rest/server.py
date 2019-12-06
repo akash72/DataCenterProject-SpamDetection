@@ -49,29 +49,20 @@ def test(X, Y):
 
     return Response(response=response_pickled, status=200, mimetype="application/json")
 
-#Get hash of keyword
-@app.route('/api/key/<X>', methods=['GET'])
+#Get Result of keyword
+@app.route('/api/key/<X>', methods=['POST'])
 def getvalue(X):
     r = redis.Redis(host="10.128.15.215", db=1)
     v = r.get(X)
+    r2 = redis.Redis(host="10.128.15.215", db=2)
+    #result = base64.b64decode(pickle.loads(r2.get(v)))
+    result = pickle.loads(r2.get(v))
     response = {
-        "value": v
+        "The Results is": result
     }
     response_pickled = jsonpickle.encode(response)
     return Response(response=response_pickled, status=200, mimetype="application/json")
-
-#Get content-result pair
-@app.route('/api/result/<X>', methods=['GET'])
-def getResult(X):
-    r = redis.Redis(host="10.128.15.215", db=2)
-    v = base64.b64decode(pickle.loads(r.get(X)))
-    response = {
-        "value": v
-    }
-    response_pickled = jsonpickle.encode(response)
-    return Response(response=response_pickled, status=200, mimetype="application/json")
-
-
+    
 app.run(host="0.0.0.0", port=5000)
 app.debug = True
 
