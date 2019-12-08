@@ -23,7 +23,9 @@ channel.queue_declare(queue='work')
 def test(X, Y):
     sub = X
     con = Y
+    print("The subject from client is :")
     print(sub)
+    print("The content from client is :")
     print(con)
     text = sub + " " + con
     r = request
@@ -36,8 +38,6 @@ def test(X, Y):
             "mail": q
         }
         response_pickled = jsonpickle.encode(response)
-        print("HASH OF KEY")
-        print(q)
         message = pickle.dumps([text, q, r.data])
         channel.basic_publish(exchange='', routing_key='work', body=message)
         print(" [x] Sent Data ")

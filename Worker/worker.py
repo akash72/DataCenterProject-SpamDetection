@@ -134,14 +134,15 @@ channel.queue_declare(queue='work')
 
 
 def callback(ch, method, properties, body):
-    print("Callback called")
+    print("Callback function is called!")
     obj1, obj2, obj3 = pickle.loads(body)
     text = obj1
     hashval = obj2
     first_Word = text.split(' ', 1)[0]
-    print("First Word",first_Word)
+    #print("First Word",first_Word)
     print("#"*50)
 
+    print("Processing the mail.....")
     file_path_legit = os.path.join(os.path.dirname(os.path.realpath(__file__)),"enron1/ham/")
     file_path_spam = os.path.join(os.path.dirname(os.path.realpath(__file__)),"enron1/spam/")
 
@@ -185,10 +186,12 @@ def callback(ch, method, properties, body):
     response = {
             "res": k
         }
-    print(response)
+    print("The mail is a " + k)
 
     redisHash = redis.Redis(host="10.128.15.215 ", db=1)     # Keyword - Hash(content) pair
     redisHash.set(first_Word, hashval)
+    print("\n")
+    print("#"*50)
     print("\n Redis get by Key word of mail: ", first_Word)
     val1 = redisHash.get(first_Word)
     print(val1)
@@ -198,6 +201,8 @@ def callback(ch, method, properties, body):
     listval.append(k)
     redisName = redis.Redis(host="10.128.15.215 ", db=2)        # Store Hash - [Content,result] Pair
     redisName.set(hashval, pickle.dumps(listval))
+    print("\n")
+    print("#"*50)
     print("\n Redis get by Hash: ", hashval)
     val2 = pickle.loads(redisName.get(hashval))
     print(val2)

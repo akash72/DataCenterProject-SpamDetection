@@ -10,9 +10,9 @@ import time
 
 # storing the values for future use
 addr = 'http://{}:5000'
-print("Enter Subject")
+print("Enter the subject of your mail :")
 sub = input()
-print("Enter Content")
+print("Enter the content of your mail :")
 con = input()
 headers = {'content-type': 'text/plain'}
 
@@ -31,12 +31,14 @@ def SendResult():
 addr = addr.format(sys.argv[1])
 
 detectSpam()
-print("Request Handled")
+print("#"*50)
+print("......Your mail is being processed......")
 
 key = sub.split(' ', 1)[0]
 print("KEY WORD",key)
     
 time.sleep(30)
-print("The result is ")
+print("......Your mail is processed......")
+print("The result is : ")
 SendResult()
 
